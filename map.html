@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Weather and AQI Data</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        #loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #map.grow {
+            transition: all 1s;
+            transform: scale(1);
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+    <h1>Weather and AQI Data</h1>
+    <div id="map"></div>
+    <script>
+        const map = L.map('map').setView([0, 0], 2);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        const weatherCluster = L.markerClusterGroup();
+        const aqiCluster = L.markerClusterGroup();
+
+        const aqiIcon = L.icon({
+            iconUrl: 'cloudy.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        function loadWeatherData() {
+            Papa.parse("CSV/top100cities_weather_data.csv", {
+                download: true,
+                header: true,
+                complete: function (results) {
+                    const data = results.data;
+                    data.forEach(row => {
+                        const latitude = parseFloat(row.Latitude);
+                        const longitude = parseFloat(row.Longitude);
+
+                        if (!isNaN(latitude) && !isNaN(longitude)) {
+                            const marker = L.marker([latitude, longitude]);
+                            const popupContent = `
+                                <strong>City:</strong> ${row.City}<br>
+                                <strong>Temperature:</strong> ${row["Temperature (Celsius)"]} °C<br>
+                                <strong>Wind Speed:</strong> ${row["Wind Speed (m/s)"]} m/s<br>
+                                <strong>Description:</strong> ${row.Description}<br>
+                                <strong>Country:</strong> ${row.Country}
+                            `;
+                            marker.bindPopup(popupContent);
+                            weatherCluster.addLayer(marker);
+                        }
+                    });
+                    map.addLayer(weatherCluster);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('map').style.display = 'block';
+                    document.getElementById('map').classList.add('grow');
+                }
+            });
+        }
+
+        function loadAQIData() {
+            Papa.parse("CSV/AQI and Lat Long of Countries.csv", {
+                download: true,
+                header: true,
+                complete: function (results) {
+                    const data = results.data;
+                    data.forEach(row => {
+                        const latitude = parseFloat(row.Latitude);
+                        const longitude = parseFloat(row.Longitude);
+
+                        if (!isNaN(latitude) && !isNaN(longitude)) {
+                            const marker = L.marker([latitude, longitude], { icon: aqiIcon });
+                            const popupContent = `
+                                <strong>Country:</strong> ${row.Country}<br>
+                                <strong>City:</strong> ${row.City}<br>
+                                <strong>AQI Value:</strong> ${row["AQI Value"]}<br>
+                                <strong>AQI Category:</strong> ${row["AQI Category"]}<br>
+                                <strong>CO AQI Value:</strong> ${row["CO AQI Value"]}<br>
+                                <strong>CO AQI Category:</strong> ${row["CO AQI Category"]}<br>
+                                <strong>Ozone AQI Value:</strong> ${row["Ozone AQI Value"]}<br>
+                                <strong>Ozone AQI Category:</strong> ${row["Ozone AQI Category"]}<br>
+                                <strong>NO2 AQI Value:</strong> ${row["NO2 AQI Value"]}<br>
+                                <strong>NO2 AQI Category:</strong> ${row["NO2 AQI Category"]}<br>
+                                <strong>PM2.5 AQI Value:</strong> ${row["PM2.5 AQI Value"]}<br>
+                                <strong>PM2.5 AQI Category:</strong> ${row["PM2.5 AQI Category"]}
+                            `;
+                            marker.bindPopup(popupContent);
+                            aqiCluster.addLayer(marker);
+                        }
+                    });
+                    map.addLayer(aqiCluster);
+                }
+            });
+        }
+
+        loadWeatherData();
+        loadAQIData();
+    </script>
+</body>
+
+</html>

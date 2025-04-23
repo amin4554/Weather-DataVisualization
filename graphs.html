@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Data Visualizations</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .axis-label {
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .chart-container {
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        svg {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+        .dot {
+            fill: steelblue;
+        }
+        .dot:hover {
+            fill: orange;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            height: auto;
+            padding: 10px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <div class="title">Top 15 Cities with Least AQI</div>
+        <svg id="least-aqi-chart" width="800" height="500"></svg>
+    </div>
+    <div class="chart-container">
+        <div class="title">Top 15 Cities with Most AQI</div>
+        <svg id="most-aqi-chart" width="800" height="500"></svg>
+    </div>
+    <div class="chart-container">
+        <div class="title">Wind Speed vs Temperature</div>
+        <svg id="scatter-plot" width="800" height="500"></svg>
+    </div>
+    <script>
+        const leastAQIData = [
+            {"City": "Macas", "AQI": 7},
+            {"City": "Tari", "AQI": 8},
+            {"City": "Azogues", "AQI": 8},
+            {"City": "Huaraz", "AQI": 9},
+            {"City": "Manokwari", "AQI": 10},
+            {"City": "Nueva Loja", "AQI": 10},
+            {"City": "Huancavelica", "AQI": 10},
+            {"City": "Correntina", "AQI": 11},
+            {"City": "Huamachuco", "AQI": 11},
+            {"City": "Puerto Madryn", "AQI": 11},
+            {"City": "La Rioja", "AQI": 11},
+            {"City": "Young", "AQI": 11},
+            {"City": "Puquio", "AQI": 11},
+            {"City": "Mount Hagen", "AQI": 11},
+            {"City": "Andradina", "AQI": 11}
+        ];
+
+        const mostAQIData = [
+            {"City": "Bahawalnagar", "AQI": 500},
+            {"City": "Harunabad", "AQI": 500},
+            {"City": "Mahendragarh", "AQI": 500},
+            {"City": "Phalodi", "AQI": 500},
+            {"City": "Jodhpur", "AQI": 500},
+            {"City": "Delhi", "AQI": 500},
+            {"City": "Durango", "AQI": 500},
+            {"City": "Nohar", "AQI": 500},
+            {"City": "Nawalgarh", "AQI": 500},
+            {"City": "Rohtak", "AQI": 500},
+            {"City": "Etah", "AQI": 500},
+            {"City": "Sardulgarh", "AQI": 500},
+            {"City": "Maur", "AQI": 500},
+            {"City": "Dhanaura", "AQI": 500},
+            {"City": "Jalalabad", "AQI": 500}
+        ];
+
+        function createBarChart(svgId, data) {
+            const margin = {top: 40, right: 20, bottom: 70, left: 60},
+                  width = 800 - margin.left - margin.right,
+                  height = 500 - margin.top - margin.bottom;
+
+            const svg = d3.select(svgId)
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .range([0, width])
+                .padding(0.1)
+                .domain(data.map(d => d.City));
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)")
+                .style("text-anchor", "end");
+
+            const y = d3.scaleLinear()
+                .range([height, 0])
+                .domain([0, d3.max(data, d => d.AQI)]);
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            svg.selectAll(".bar")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.City))
+                .attr("width", x.bandwidth())
+                .attr("y", d => y(d.AQI))
+                .attr("height", d => height - y(d.AQI));
+
+            svg.append("text")
+                .attr("transform", `translate(${width / 2},${height + margin.bottom - 15})`)
+                .attr("class", "axis-label")
+                .text("City");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .attr("class", "axis-label")
+                .text("AQI Value");
+        }
+
+        function createPieChart(svgId, data) {
+            const width = 800,
+                  height = 500,
+                  radius = Math.min(width, height) / 2;
+
+            const svg = d3.select(svgId)
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width / 2},${height / 2})`);
+
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const pie = d3.pie()
+                .value(d => d.AQI)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(0)
+                .outerRadius(radius);
+
+            const g = svg.selectAll(".arc")
+                .data(pie(data))
+                .enter().append("g")
+                .attr("class", "arc");
+
+            g.append("path")
+                .attr("d", arc)
+                .style("fill", d => color(d.data.City));
+
+            g.append("text")
+                .attr("transform", d => `translate(${arc.centroid(d)})`)
+                .attr("dy", ".35em")
+                .style("text-anchor", "middle")
+                .text(d => d.data.City);
+        }
+
+        createBarChart("#least-aqi-chart", leastAQIData);
+        createPieChart("#most-aqi-chart", mostAQIData);
+        
+        d3.csv("CSV/top100cities_weather_data.csv").then(data => {
+            console.log(data); 
+
+            data.forEach(d => {
+                d.WindSpeed = parseFloat(d["Wind Speed (m/s)"]);
+                d.Temperature = parseFloat(d["Temperature (Celsius)"]);
+                console.log(d); 
+            });
+
+            const margin = {top: 40, right: 20, bottom: 70, left: 60},
+                  width = 800 - margin.left - margin.right,
+                  height = 500 - margin.top - margin.bottom;
+
+            const svg = d3.select("#scatter-plot")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            
+            const x = d3.scaleLinear()
+                .domain([d3.min(data, d => d.WindSpeed), d3.max(data, d => d.WindSpeed)])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(data, d => d.Temperature), d3.max(data, d => d.Temperature)])
+                .range([height, 0]);
+
+            
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            svg.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => x(d.WindSpeed))
+                .attr("cy", d => y(d.Temperature))
+                .attr("r", 5)
+                .on("mouseover", function(event, d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(`${d.City}, ${d.Country}<br>Wind Speed: ${d.WindSpeed}<br>Temperature: ${d.Temperature}`)
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            svg.append("text")
+                .attr("transform", `translate(${width / 2},${height + margin.bottom - 15})`)
+                .attr("class", "axis-label")
+                .text("Wind Speed (m/s)");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .attr("class", "axis-label")
+                .text("Temperature (°C)");
+        }).catch(error => {
+            console.error('Error loading the CSV data: ', error);
+        });
+    </script>
+</body>
+</html>

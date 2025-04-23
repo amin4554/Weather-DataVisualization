@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Data Visualization</title>
+    <meta name="description" content="Data Visualization Landing Page">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            overflow: hidden;
+            background-image: url("bmap.png");
+            background-size: cover;
+        }
+
+        h1 {
+            text-align: center;
+            color: black;
+            margin: 20px 0;
+        }
+
+        button {
+            background-color: gray;
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.2em;
+            margin: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #2c3e50;
+            transform: translateY(-5px);
+        }
+
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Visualization</h1>
+    <div class="center-content">
+        <button onclick="location.href='map.html'">Map</button>
+        <button onclick="location.href='graphs.html'">Graphs</button>
+    </div>
+</body>
+</html>
